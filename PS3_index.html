@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Budget Investor — Min Downfall Finder</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #080c14;
+      --surf:     #0f1623;
+      --surf2:    #161f30;
+      --surf3:    #1c2840;
+      --border:   #1e2d45;
+      --accent:   #6366f1;
+      --accent2:  #8b5cf6;
+      --green:    #10b981;
+      --amber:    #f59e0b;
+      --red:      #ef4444;
+      --text:     #f1f5f9;
+      --muted:    #64748b;
+      --muted2:   #94a3b8;
+      --radius:   14px;
+      --rsm:      8px;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 1.75rem 1.25rem 3rem;
+    }
+
+    .wrap { max-width: 1080px; margin: 0 auto; }
+
+    /* ── Header ── */
+    .hdr {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .hdr-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: linear-gradient(135deg,rgba(99,102,241,.18),rgba(139,92,246,.18));
+      border: 1px solid rgba(99,102,241,.35);
+      color: #a5b4fc; font-size: 12px; font-weight: 600;
+      padding: 5px 14px; border-radius: 20px;
+      letter-spacing: .06em; margin-bottom: 14px;
+    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    .hdr h1 { font-size: 1.75rem; font-weight: 800; line-height: 1.2;
+      background: linear-gradient(135deg,#6366f1,#a78bfa,#c4b5fd);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hdr p { font-size: 13px; color: var(--muted2); margin-top: 6px; }
+
+    /* ── Slicer ── */
+    .slicer-card {
+      background: var(--surf); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.1rem 1.4rem;
+      margin-bottom: 1.5rem;
+    }
+    .slicer-top {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px; margin-bottom: .9rem;
+    }
+    .slicer-title { font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--muted2); display: flex; align-items: center; gap: 7px; }
+    .refresh-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--surf3); border: 1px solid var(--border);
+      color: var(--muted2); font-size: 12px; font-weight: 500;
+      padding: 6px 14px; border-radius: var(--rsm); cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .refresh-btn:disabled { opacity: .45; cursor: not-allowed; }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin { animation: spin .7s linear infinite; display: inline-block; }
+
+    .slicer-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .sbtn {
+      padding: 9px 18px; border-radius: 20px;
+      border: 1px solid var(--border); background: var(--surf2);
+      color: var(--muted2); font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .sbtn:hover { border-color: var(--accent); color: var(--accent); }
+    .sbtn.active {
+      background: linear-gradient(135deg,#6366f1,#8b5cf6);
+      border-color: transparent; color: #fff; font-weight: 700;
+      box-shadow: 0 0 16px rgba(99,102,241,.35);
+    }
+    .sbtn .cnt {
+      display: inline-block; background: rgba(255,255,255,.16);
+      font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: 5px;
+    }
+
+    /* ── KPI Grid ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+    @media(max-width:900px){ .kpi-grid { grid-template-columns: repeat(3,1fr); } }
+    @media(max-width:580px){ .kpi-grid { grid-template-columns: 1fr 1fr; } }
+
+    .kpi {
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.15rem 1rem;
+      position: relative; overflow: hidden;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .kpi:hover { border-color: rgba(99,102,241,.5); box-shadow: 0 0 20px rgba(99,102,241,.12); }
+    .kpi::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg,#6366f1,#8b5cf6);
+    }
+    .kpi.special::before { background: linear-gradient(90deg,#10b981,#34d399); }
+    .kpi-icon { font-size: 20px; margin-bottom: 8px; }
+    .kpi-label {
+      font-size: 10px; color: var(--muted); text-transform: uppercase;
+      letter-spacing: .07em; margin-bottom: 7px; font-weight: 600;
+    }
+    .kpi-val {
+      font-size: 17px; font-weight: 800; color: var(--text);
+      line-height: 1.2; word-break: break-word;
+      min-height: 28px;
+    }
+    .kpi-val.big { font-size: 26px; color: var(--green); }
+    .kpi-val.amber { color: var(--amber); }
+    .kpi-val.accent { color: #a5b4fc; }
+    .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+    /* loading pulse */
+    .kpi-val.loading {
+      background: linear-gradient(90deg,var(--surf3) 25%,var(--surf2) 50%,var(--surf3) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: 4px; color: transparent;
+      min-width: 80px;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* ── Detail Card ── */
+    .detail-card {
+      background: var(--surf); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .dc-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 8px; margin-bottom: 1rem;
+    }
+    .dc-title { font-size: 14px; font-weight: 700; }
+    .dc-sub { font-size: 12px; color: var(--muted2); }
+
+    /* ── Table ── */
+    .tbl-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 700px; font-size: 13px; }
+    thead tr { background: var(--surf3); }
+    thead th {
+      padding: 10px 14px; text-align: left;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    th.r, td.r { text-align: right; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(99,102,241,.05); }
+    tbody tr.alt { background: var(--surf2); }
+    tbody tr.alt:hover { background: rgba(99,102,241,.08); }
+    td { padding: 10px 14px; color: var(--text); }
+
+    .sym-pill {
+      display: inline-block; background: rgba(99,102,241,.16);
+      color: #a5b4fc; font-size: 11px; font-weight: 700;
+      padding: 2px 9px; border-radius: 11px; letter-spacing: .04em;
+    }
+    .down-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 12px; font-weight: 700; padding: 3px 10px;
+      border-radius: 11px; background: rgba(239,68,68,.14); color: var(--red);
+    }
+    .tag {
+      font-size: 10px; font-weight: 700; padding: 2px 8px;
+      border-radius: 8px; margin-left: 4px;
+    }
+    .star-row td { background: rgba(16,185,129,.06) !important; }
+    .star-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: rgba(16,185,129,.16); color: var(--green);
+      font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+    }
+
+    /* ── Empty / Error ── */
+    .empty { text-align:center; padding:3rem 1rem; color:var(--muted); font-size:14px; }
+    .loader {
+      display:inline-block; width:22px; height:22px;
+      border:2px solid var(--border); border-top-color:var(--accent);
+      border-radius:50%; animation:spin .7s linear infinite; margin-bottom:10px;
+    }
+
+    /* ── Footer ── */
+    .footer { text-align:center; margin-top:2rem; font-size:11px; color:var(--muted); }
+    .footer a { color:var(--accent); text-decoration:none; }
+
+    /* mini bar */
+    .bar-bg { background:var(--surf3); border-radius:4px; height:5px; margin-top:5px; overflow:hidden; }
+    .bar-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,#6366f1,#8b5cf6); transition:width .5s; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div class="hdr-badge"><span class="dot"></span>LIVE MARKET DATA</div>
+    <h1>&#x1F4B0; Budget Investor — Min Downfall Finder</h1>
+    <p>Find the crypto coin with the <strong>least average downfall</strong> in your price range for maximum profit potential</p>
+  </div>
+
+  <!-- Slicer Card -->
+  <div class="slicer-card">
+    <div class="slicer-top">
+      <div class="slicer-title">&#x25A6; SELECT PRICE RANGE (USD)</div>
+      <button class="refresh-btn" id="refBtn" onclick="boot()">
+        <span id="refIcon">&#x21bb;</span> Refresh Data
+      </button>
+    </div>
+    <div class="slicer-btns">
+      <button class="sbtn active" id="s0" onclick="setSlicer(0)">$0 – $0.05 <span class="cnt" id="c0">—</span></button>
+      <button class="sbtn"        id="s1" onclick="setSlicer(1)">$0.05 – $0.5 <span class="cnt" id="c1">—</span></button>
+      <button class="sbtn"        id="s2" onclick="setSlicer(2)">$0.5 – $5 <span class="cnt" id="c2">—</span></button>
+      <button class="sbtn"        id="s3" onclick="setSlicer(3)">$5 – $50 <span class="cnt" id="c3">—</span></button>
+      <button class="sbtn"        id="s4" onclick="setSlicer(4)">&gt; $50 <span class="cnt" id="c4">—</span></button>
+    </div>
+  </div>
+
+  <!-- 5 KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-icon">&#x1F4B9;</div>
+      <div class="kpi-label">Coin Name</div>
+      <div class="kpi-val accent loading" id="kpi-name">Loading</div>
+      <div class="kpi-sub">Least avg downfall in range</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon">&#x1F3F7;</div>
+      <div class="kpi-label">Coin Symbol</div>
+      <div class="kpi-val accent loading" id="kpi-sym">Loading</div>
+      <div class="kpi-sub">Ticker identifier</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon">&#x1F4B5;</div>
+      <div class="kpi-label">Current Price</div>
+      <div class="kpi-val loading" id="kpi-price">Loading</div>
+      <div class="kpi-sub">Live USD price</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon">&#x1F4C9;</div>
+      <div class="kpi-label">Avg Downfall %</div>
+      <div class="kpi-val amber loading" id="kpi-avg">Loading</div>
+      <div class="kpi-sub">Mean of 1H, 24H, 7D drops</div>
+    </div>
+    <div class="kpi special">
+      <div class="kpi-icon">&#x1F522;</div>
+      <div class="kpi-label">Total Coins in Range</div>
+      <div class="kpi-val big loading" id="kpi-total">Loading</div>
+      <div class="kpi-sub">Records considered</div>
+    </div>
+  </div>
+
+  <!-- Detail Table -->
+  <div class="detail-card">
+    <div class="dc-hdr">
+      <div>
+        <div class="dc-title">&#x1F4CB; All Coins in Selected Range</div>
+        <div class="dc-sub">Sorted by avg downfall % (ascending) — lowest = best pick</div>
+      </div>
+      <span id="range-label" style="font-size:12px;color:var(--muted2);font-weight:600;"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px;">#</th>
+            <th>Coin</th>
+            <th class="r">Symbol</th>
+            <th class="r">Price (USD)</th>
+            <th class="r">1H Drop %</th>
+            <th class="r">24H Drop %</th>
+            <th class="r">7D Drop %</th>
+            <th class="r">Avg Downfall %</th>
+            <th class="r">Pick</th>
+          </tr>
+        </thead>
+        <tbody id="tbl">
+          <tr><td colspan="9"><div class="empty"><div class="loader"></div><br>Fetching market data…</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    Data: <a href="https://www.coingecko.com/en/api" target="_blank">CoinGecko Public API v3</a> &nbsp;|&nbsp;
+    Downfall % = absolute value of negative change (drop assumed positive = price fell) &nbsp;|&nbsp;
+    Built by <strong>Austin</strong> — 13 March 2026
+  </div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────
+const RANGES = [
+  { label: '$0 – $0.05',   min: 0,    max: 0.05  },
+  { label: '$0.05 – $0.5', min: 0.05, max: 0.5   },
+  { label: '$0.5 – $5',    min: 0.5,  max: 5     },
+  { label: '$5 – $50',     min: 5,    max: 50    },
+  { label: '> $50',        min: 50,   max: Infinity }
+];
+
+let allCoins = [];
+let activeRange = 0;
+
+// ── Fetch ─────────────────────────────────────────────────────────────────
+async function boot() {
+  const btn  = document.getElementById('refBtn');
+  const icon = document.getElementById('refIcon');
+  btn.disabled = true;
+  icon.classList.add('spin');
+  setLoadingKPIs();
+
+  try {
+    const pages = [1, 2, 3];
+    const fetches = pages.map(pg =>
+      fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=${pg}&sparkline=false&price_change_percentage=1h,24h,7d`)
+        .then(r => r.ok ? r.json() : [])
+    );
+    const results = await Promise.all(fetches);
+    const raw = results.flat();
+
+    allCoins = raw
+      .filter(c => c.current_price > 0)
+      .map(c => {
+        const h1  = Math.abs(c.price_change_percentage_1h_in_currency  || 0);
+        const h24 = Math.abs(c.price_change_percentage_24h             || 0);
+        const d7  = Math.abs(c.price_change_percentage_7d_in_currency  || 0);
+        const avg = (h1 + h24 + d7) / 3;
+        return {
+          name:   c.name,
+          symbol: c.symbol.toUpperCase(),
+          price:  c.current_price,
+          h1, h24, d7, avg,
+          rank:   c.market_cap_rank || 9999
+        };
+      });
+
+    updateCounts();
+    render();
+  } catch(e) {
+    document.getElementById('tbl').innerHTML =
+      `<tr><td colspan="9"><div class="empty">&#9888; ${e.message}</div></td></tr>`;
+    clearKPIs();
+  } finally {
+    btn.disabled = false;
+    icon.classList.remove('spin');
+    icon.textContent = '↻';
+  }
+}
+
+// ── Slicer ────────────────────────────────────────────────────────────────
+function setSlicer(idx) {
+  activeRange = idx;
+  for (let i = 0; i < 5; i++) document.getElementById('s' + i).classList.remove('active');
+  document.getElementById('s' + idx).classList.add('active');
+  render();
+}
+
+function inRange(price, idx) {
+  const r = RANGES[idx];
+  return price >= r.min && price < r.max;
+}
+
+function updateCounts() {
+  for (let i = 0; i < 5; i++) {
+    document.getElementById('c' + i).textContent = allCoins.filter(c => inRange(c.price, i)).length;
+  }
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+function render() {
+  const coins = allCoins.filter(c => inRange(c.price, activeRange))
+                        .sort((a, b) => a.avg - b.avg);
+
+  document.getElementById('range-label').textContent =
+    RANGES[activeRange].label + ' — ' + coins.length + ' coin' + (coins.length !== 1 ? 's' : '');
+
+  if (!coins.length) {
+    clearKPIs('No coins in this range');
+    document.getElementById('tbl').innerHTML =
+      '<tr><td colspan="9"><div class="empty">No coins found in this price range.</div></td></tr>';
+    return;
+  }
+
+  const best = coins[0];
+  // KPIs
+  setKPI('kpi-name',  best.name,              'accent');
+  setKPI('kpi-sym',   best.symbol,             'accent');
+  setKPI('kpi-price', fmtPrice(best.price),    '');
+  setKPI('kpi-avg',   best.avg.toFixed(3) + '%','amber');
+  setKPI('kpi-total', String(coins.length),    'big');
+
+  // Table
+  const maxAvg = Math.max(...coins.map(c => c.avg));
+  document.getElementById('tbl').innerHTML = coins.map((c, i) => {
+    const isBest = i === 0;
+    const barW   = maxAvg > 0 ? Math.round((c.avg / maxAvg) * 100) : 0;
+    return `
+      <tr class="${isBest ? 'star-row' : i % 2 === 1 ? 'alt' : ''}">
+        <td style="color:var(--muted2);font-size:12px;">${i + 1}</td>
+        <td style="font-weight:600;">${c.name}</td>
+        <td class="r"><span class="sym-pill">${c.symbol}</span></td>
+        <td class="r" style="font-weight:700;">${fmtPrice(c.price)}</td>
+        <td class="r" style="color:var(--red);">${c.h1.toFixed(3)}%</td>
+        <td class="r" style="color:var(--red);">${c.h24.toFixed(3)}%</td>
+        <td class="r" style="color:var(--red);">${c.d7.toFixed(3)}%</td>
+        <td class="r">
+          <span class="down-chip">&#x25BC; ${c.avg.toFixed(3)}%</span>
+          <div class="bar-bg" style="width:80px;display:inline-block;vertical-align:middle;margin-left:8px;"><div class="bar-fill" style="width:${barW}%;background:${isBest?'linear-gradient(90deg,#10b981,#34d399)':'linear-gradient(90deg,#6366f1,#8b5cf6)'};"></div></div>
+        </td>
+        <td class="r">${isBest ? '<span class="star-badge">&#11088; Best Pick</span>' : '<span style="color:var(--muted);font-size:12px;">—</span>'}</td>
+      </tr>`;
+  }).join('');
+}
+
+// ── KPI helpers ───────────────────────────────────────────────────────────
+function setKPI(id, val, cls) {
+  const el = document.getElementById(id);
+  el.textContent = val;
+  el.className   = 'kpi-val ' + cls;
+}
+function clearKPIs(msg = '—') {
+  ['kpi-name','kpi-sym','kpi-price','kpi-avg'].forEach(id => setKPI(id, msg, 'muted'));
+  setKPI('kpi-total', '0', 'big');
+}
+function setLoadingKPIs() {
+  ['kpi-name','kpi-sym','kpi-price','kpi-avg','kpi-total'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = 'Loading';
+    el.className   = 'kpi-val loading';
+  });
+}
+
+// ── Formatters ────────────────────────────────────────────────────────────
+function fmtPrice(n) {
+  if (n == null) return 'N/A';
+  if (n >= 1000) return '$' + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if (n >= 1)    return '$' + n.toFixed(4);
+  if (n >= 0.01) return '$' + n.toFixed(5);
+  return '$' + n.toFixed(8);
+}
+
+boot();
+</script>
+</body>
+</html>
