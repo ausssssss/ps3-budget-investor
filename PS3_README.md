@@ -2,7 +2,7 @@
 
 A live crypto analysis dashboard for budget investors aiming for maximum profit with minimal risk. Identifies the coin with the **least average downfall** (1H + 24H + 7D) across five selectable price ranges using a slicer-connected KPI system.
 
-**Built by Austin | Completed: 13 March 2026**
+**Built by Austin | Completed: 23 March 2026**
 
 ---
 
@@ -62,14 +62,6 @@ Pages 1–3 fetched in parallel (~750 coins), filtered and classified client-sid
 
 ---
 
-## 🚀 Deploy on GitHub Pages
-
-1. Upload `index.html` to a GitHub repo
-2. Settings → Pages → Deploy from `main` → `/ (root)`
-3. Live at: `https://<username>.github.io/<repo>/`
-
----
-
 ## 📁 Files
 
 ```
@@ -80,5 +72,4 @@ ps3-budget-investor/
 
 ---
 
-*Internship Problem Statement #3 — Data Analyst Project*
-*Completed: 13 March 2026 | Author: Austin*
+*Completed: 23 March 2026 | Author: Austin*
